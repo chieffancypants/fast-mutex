@@ -15,6 +15,37 @@ function randomId () {
   return Math.random() * 1000000000 + '';
 }
 
+function acquireLock (key, id, localStorage, cb) {
+  let x = `mutexlock_x_${key}`;
+  let y = `mutexlock_y_${key}`;
+
+  console.log('acquireLock', key, localStorage.getItem(x));
+  localStorage.setItem(x, id);
+  if (localStorage.getItem(y)) {
+    console.error('locked.  restarting...', localStorage.getItem(y));
+    setTimeout(() => acquireLock(key, id, localStorage, cb));
+    return;
+  }
+
+  localStorage.setItem(y, id);
+  if (localStorage.getItem(x) !== id) {
+    setTimeout(() => {
+      if (localStorage.getItem(y) !== id) {
+        setTimeout(() => acquireLock(key, id, localStorage, cb));
+        return;
+      } else {
+        // we have a lock
+        console.log('we gots a lock');
+      }
+    }, 500);
+    return;
+  }
+
+  // no contention:
+  console.log('aquired lock without contention');
+  cb();
+}
+
 class FastMutex {
   constructor ({ localStorageKey, id = randomId(), x = '_MUTEX_LOCK_X', y = '_MUTEX_LOCK_Y', localStorage }) {
     this.lsKey = localStorageKey
@@ -24,8 +55,25 @@ class FastMutex {
     this.localStorage = localStorage || window.localStorage
   }
 
-  lock (lsVal, fn) {
+
+  lock (key, fn) {
     return new Promise((resolve, reject) => {
+      acquireLock(key, 'randomid', this.localStorage, () => {
+        resolve('weee')
+      })
+    })
+  }
+
+  release (key) {
+    let y = `mutexlock_y_${key}`;
+    return new Promise((resolve, reject) => {
+      return this.localStorage.setItem(key, 0);
+    });
+  }
+
+  sync (lsVal) {
+    return new Promise((resolve, reject) => {
+      console.log(resolve);
       if (this.localStorage.getItem(this.lsKey)) {
         console.log('Already set. Skipping...');
         return resolve(this.localStorage.getItem(this.lsKey));
