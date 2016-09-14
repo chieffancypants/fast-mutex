@@ -1,13 +1,13 @@
 {
-  "name": "fastmutex",
+  "name": "fast-mutex",
   "version": "1.0.0",
-  "description": "",
+  "description": "Implementation of FastMutex for mutual exclusion locks using LocalStorage",
   "main": "index.js",
   "scripts": {
     "test": "mocha test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["mutex", "fastmutex", "lock", "localstorage", "browser"],
+  "author": "chieffancypants",
   "license": "ISC",
   "devDependencies": {
     "chai": "^3.5.0",
