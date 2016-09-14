@@ -49,8 +49,32 @@ This is a promised-based API.  Both methods (`lock` and `release`) fulfill the p
 
 ```js
 mutex.lock('sessionId').then((stats) => {
-  // stats -> { restartCount, locksLost, contentionCount, timeToAcquire, startTime, endTime }
-})
+  // stats object contains:
+  {
+    restartCount: 0, // the number of times the lock process restarted
+    locksLost: 0, // the number of times the lock lost to another process
+    contentionCount: 0, // the number of times contending for a lock
+    acquireStart: 1473872633183, // timestamp when acquisition request started
+    acquireEnd: 1473872633186, // timestamp when acquisition request fulfilled
+    acquireDuration: 3, // the total time taken to acquire the lock (in ms)
+  }
+  return mutex.release('sessionId');
+}).then((stats) => {
+  // lock release stats contains everything above:
+  {
+    restartCount: 0,
+    locksLost: 0,
+    contentionCount: 0,
+    acquireStart: 1473872633183,
+    acquireEnd: 1473872633186,
+    acquireDuration: 3,
+
+    // and also contains lock duration stats:
+    lockStart: 1473872633186, // timestamp when lock was acquired
+    lockEnd: 1473872633189, // timestamp when lock was released
+    lockDuration: 3 // the total time the lock was held (in ms)
+  }
+});
 ```
 
 ### new FastMutex([opts])

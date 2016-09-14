@@ -12,8 +12,10 @@ const randomId = () => Math.random() + '';
  * resolve the promise with all the lock stats
  */
 const resolveWithStats = (resolve, stats) => {
-  stats.endTime = new Date().getTime();
-  stats.timeToAcquire = stats.endTime - stats.startTime;
+  const currentTime = new Date().getTime();
+  stats.acquireEnd = currentTime;
+  stats.acquireDuration = stats.acquireEnd - stats.acquireStart;
+  stats.lockStart = currentTime;
   resolve(stats);
 };
 
@@ -30,8 +32,8 @@ class FastMutex {
       restartCount: 0,
       locksLost: 0,
       contentionCount: 0,
-      timeToAcquire: 0,
-      startTime: null
+      acquireDuration: 0,
+      acquireStart: null
     };
   }
 
@@ -40,12 +42,12 @@ class FastMutex {
     const x = this.xPrefix + key;
     const y = this.yPrefix + key;
 
-    if (!this.lockStats.startTime) {
-      this.lockStats.startTime = new Date().getTime();
+    if (!this.lockStats.acquireStart) {
+      this.lockStats.acquireStart = new Date().getTime();
     }
 
     return new Promise((resolve, reject) => {
-      const elapsedTime = new Date().getTime() - this.lockStats.startTime;
+      const elapsedTime = new Date().getTime() - this.lockStats.acquireStart;
       if (elapsedTime >= this.timeout) {
         debug('Lock on "%s" could not be acquired by FastMutex client "%s"', key, this.clientId);
         return reject(new Error(`Lock could not be acquired within ${this.timeout}ms`));
@@ -100,7 +102,9 @@ class FastMutex {
     const y = this.yPrefix + key;
     return new Promise((resolve) => {
       this.localStorage.removeItem(y);
-      resolve();
+      this.lockStats.lockEnd = new Date().getTime();
+      this.lockStats.lockDuration = this.lockStats.lockEnd - this.lockStats.lockStart;
+      resolve(this.lockStats);
     });
   }
 

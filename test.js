@@ -45,7 +45,7 @@ describe('FastMutex', () => {
       expect(stats.restartCount).to.be.equal(spy.callCount - 1);
       expect(stats.locksLost).to.be.equal(0);
       expect(stats.contentionCount).to.be.equal(0);
-      expect(stats.timeToAcquire).to.be.at.least(20);
+      expect(stats.acquireDuration).to.be.at.least(20);
       expect(spy.callCount).to.be.at.least(3);
     });
   });
@@ -70,7 +70,7 @@ describe('FastMutex', () => {
       expect(stats.restartCount).to.be.equal(1);
       expect(stats.locksLost).to.be.equal(1);
       expect(stats.contentionCount).to.be.equal(1);
-      expect(stats.timeToAcquire).to.be.above(50);
+      expect(stats.acquireDuration).to.be.above(50);
       expect(spy.callCount).to.be.equal(2);
     });
   });
@@ -91,7 +91,7 @@ describe('FastMutex', () => {
       expect(stats.restartCount).to.be.equal(0);
       expect(stats.locksLost).to.be.equal(0);
       expect(stats.contentionCount).to.be.equal(1);
-      expect(stats.timeToAcquire).to.be.above(50);
+      expect(stats.acquireDuration).to.be.above(50);
       expect(spy.callCount).to.be.equal(1);
     });
   });
@@ -166,7 +166,7 @@ describe('FastMutex', () => {
       // this will only execute once the other lock was released
       expect(fm1LockReleased).to.be.true;
       expect(lock2.restartCount).to.be.above(1);
-      expect(lock2.timeToAcquire).to.be.above(lockHoldTime);
+      expect(lock2.acquireDuration).to.be.above(lockHoldTime);
     });
   });
 
