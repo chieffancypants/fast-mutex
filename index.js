@@ -74,17 +74,16 @@ class FastMutex {
         // Give enough time for critical section:
         setTimeout(() => {
           lsY = this.getItem(y);
-          if (lsY !== this.clientId) {
+          if (lsY === this.clientId) {
+            // we have a lock
+            debug('FastMutex client "%s" won the lock contention on "%s"', this.clientId, key);
+            resolveWithStats(resolve, this.lockStats);
+          } else {
             // we lost the lock, restart the process again
             this.lockStats.restartCount++;
             this.lockStats.locksLost++;
             debug('FastMutex client "%s" lost the lock contention on "%s" to another process (%s). Restarting...', this.clientId, key, lsY);
             setTimeout(() => this.lock(key).then(resolve).catch(reject));
-            return;
-          } else {
-            // we have a lock
-            debug('FastMutex client "%s" won the lock contention on "%s"', this.clientId, key);
-            resolveWithStats(resolve, this.lockStats);
           }
         }, 50);
         return;
