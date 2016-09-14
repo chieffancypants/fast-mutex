@@ -15,18 +15,17 @@ const resolveWithStats = (resolve, stats) => {
   stats.endTime = new Date().getTime();
   stats.timeToAcquire = stats.endTime - stats.startTime;
   resolve(stats);
-}
+};
 
 
-// TODO: Rename ID to clientId
 class FastMutex {
-  constructor ({ id = randomId(), xPrefix = '_MUTEX_LOCK_X_', yPrefix = '_MUTEX_LOCK_Y_', timeout = 5000, localStorage }) {
-    this.id = id
+  constructor ({ clientId = randomId(), xPrefix = '_MUTEX_LOCK_X_', yPrefix = '_MUTEX_LOCK_Y_', timeout = 5000, localStorage }) {
+    this.clientId = clientId;
     this.xPrefix = xPrefix;
     this.yPrefix = yPrefix;
     this.timeout = timeout;
 
-    this.localStorage = localStorage || window.localStorage
+    this.localStorage = localStorage || window.localStorage;
     this.lockStats = {
       restartCount: 0,
       locksLost: 0,
@@ -37,7 +36,7 @@ class FastMutex {
   }
 
   lock (key) {
-    debug('Attempting to acquire Lock on "%s" using FastMutex instance "%s"', key, this.id)
+    debug('Attempting to acquire Lock on "%s" using FastMutex instance "%s"', key, this.clientId);
     const x = this.xPrefix + key;
     const y = this.yPrefix + key;
 
@@ -48,11 +47,11 @@ class FastMutex {
     return new Promise((resolve, reject) => {
       const elapsedTime = new Date().getTime() - this.lockStats.startTime;
       if (elapsedTime >= this.timeout) {
-        debug('Lock on "%s" could not be acquired by FastMutex client "%s"', key, this.id);
+        debug('Lock on "%s" could not be acquired by FastMutex client "%s"', key, this.clientId);
         return reject(new Error(`Lock could not be acquired within ${this.timeout}ms`));
       }
 
-      this.setItem(x, this.id);
+      this.setItem(x, this.clientId);
 
       // if y exists, another client is getting a lock, so retry in a bit
       let lsY = this.getItem(y);
@@ -64,43 +63,43 @@ class FastMutex {
       }
 
       // ask for inner lock
-      this.setItem(y, this.id);
+      this.setItem(y, this.clientId);
 
       // if x was changed, another client is contending for an inner lock
       let lsX = this.getItem(x);
-      if (lsX !== this.id) {
+      if (lsX !== this.clientId) {
         this.lockStats.contentionCount++;
         debug('Lock contention detected. X="%s"', lsX);
 
         // Give enough time for critical section:
         setTimeout(() => {
           lsY = this.getItem(y);
-          if (lsY !== this.id) {
+          if (lsY !== this.clientId) {
             // we lost the lock, restart the process again
             this.lockStats.restartCount++;
             this.lockStats.locksLost++;
-            debug('FastMutex client "%s" lost the lock contention on "%s" to another process (%s). Restarting...', this.id, key, lsY)
+            debug('FastMutex client "%s" lost the lock contention on "%s" to another process (%s). Restarting...', this.clientId, key, lsY);
             setTimeout(() => this.lock(key).then(resolve).catch(reject));
             return;
           } else {
             // we have a lock
-            debug('FastMutex client "%s" won the lock contention on "%s"', this.id, key);
-            resolveWithStats(resolve, this.lockStats)
+            debug('FastMutex client "%s" won the lock contention on "%s"', this.clientId, key);
+            resolveWithStats(resolve, this.lockStats);
           }
         }, 50);
         return;
       }
 
       // no contention:
-      debug('FastMutex client "%s" acquired a lock on "%s" with no contention', this.id, key);
+      debug('FastMutex client "%s" acquired a lock on "%s" with no contention', this.clientId, key);
       resolveWithStats(resolve, this.lockStats);
-    })
+    });
   }
 
   release (key) {
-    debug('FastMutex client "%s" is releasing lock on "%s"', this.id, key);
+    debug('FastMutex client "%s" is releasing lock on "%s"', this.clientId, key);
     const y = this.yPrefix + key;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.localStorage.removeItem(y);
       resolve();
     });
@@ -126,12 +125,12 @@ class FastMutex {
 
     const parsed = JSON.parse(item);
     if (new Date().getTime() - parsed.expiresAt >= this.timeout) {
-      debug('FastMutex client "%s" removed an expired record on "%s"', this.id, key);
+      debug('FastMutex client "%s" removed an expired record on "%s"', this.clientId, key);
       this.localStorage.removeItem(key);
       return null;
     }
 
-    return JSON.parse(item).value
+    return JSON.parse(item).value;
   }
 
 }

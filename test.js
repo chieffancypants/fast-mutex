@@ -11,12 +11,11 @@ var localStorage = new LocalStorage('./tmp');
 describe('FastMutex', () => {
   let sandbox;
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.sandbox.create();
     localStorage.clear();
   });
   afterEach(() => {
     sandbox.restore();
-    let len = localStorage.length;
     localStorage.clear();
     expect(localStorage.length).to.equal(0);
   });
@@ -28,7 +27,7 @@ describe('FastMutex', () => {
       expect(stats.restartCount).to.be.equal(0);
       expect(stats.locksLost).to.be.equal(0);
       expect(stats.contentionCount).to.be.equal(0);
-    })
+    });
   });
 
   it('When another client has a lock (Y is not 0), it should restart to acquire a lock at a later time', function () {
@@ -52,18 +51,18 @@ describe('FastMutex', () => {
   });
 
   it('when contending for a lock and ultimately losing, it should restart', () => {
-    const key = 'clientId';
-    const fm = new FastMutex({ localStorage: localStorage, id: 'uniqueId' });
-    const stub = sandbox.stub(fm, 'getItem')
+    const key = 'somekey';
+    const fm = new FastMutex({ localStorage: localStorage, clientId: 'uniqueId' });
+    const stub = sandbox.stub(fm, 'getItem');
 
     // Set up scenario for lock contention where we lost Y
-    stub.onCall(0).returns(null)  // getItem Y
-    stub.onCall(1).returns('lockcontention')  // getItem X
-    stub.onCall(2).returns('youLostTheLock')  // getItem Y
+    stub.onCall(0).returns(null);  // getItem Y
+    stub.onCall(1).returns('lockcontention');  // getItem X
+    stub.onCall(2).returns('youLostTheLock');  // getItem Y
 
     // fastmutex should have restarted, so let's free up the lock:
-    stub.onCall(3).returns(null)
-    stub.onCall(4).returns('uniqueId')
+    stub.onCall(3).returns(null);
+    stub.onCall(4).returns('uniqueId');
 
     const spy = sandbox.spy(fm, 'lock');
 
@@ -77,12 +76,12 @@ describe('FastMutex', () => {
   });
 
   it('When contending for a lock and ultimately winning, it should not restart', () => {
-    const key = 'clientId';
-    const fm = new FastMutex({ localStorage: localStorage, id: 'uniqueId' });
-    const stub = sandbox.stub(fm, 'getItem')
+    const key = 'somekey';
+    const fm = new FastMutex({ localStorage: localStorage, clientId: 'uniqueId' });
+    const stub = sandbox.stub(fm, 'getItem');
 
     // Set up scenario for lock contention where we lost Y
-    stub.onCall(0).returns(null)  // getItem Y
+    stub.onCall(0).returns(null);  // getItem Y
     stub.onCall(1).returns('lockContention');
     stub.onCall(2).returns('uniqueId');
 
@@ -120,7 +119,7 @@ describe('FastMutex', () => {
     const lock2Promise = fm2.lock('lock2').then((stats) => {
       lock2Acquired = true;
       expect(localStorage.getItem(yPrefix + 'lock2')).to.not.be.null;
-      return stats
+      return stats;
     });
 
     return Promise.all([lock1Promise, lock2Promise])
@@ -133,14 +132,14 @@ describe('FastMutex', () => {
   });
 
   it('release() should remove the y lock in localStorage', () => {
-    const key = 'clientId';
-    const fm1 = new FastMutex({ localStorage: localStorage, id: 'releaseTestId', yPrefix: 'yLock' });
+    const key = 'somekey';
+    const fm1 = new FastMutex({ localStorage: localStorage, clientId: 'releaseTestId', yPrefix: 'yLock' });
     return fm1.lock(key).then(() => {
       expect(fm1.getItem('yLock' + key)).to.be.equal('releaseTestId');
       return fm1.release(key);
     }).then(() => {
       expect(fm1.getItem('yLock' + key)).to.be.null;
-    })
+    });
   });
 
   // this is essentially just a better way to test that two locks cannot get
@@ -159,7 +158,7 @@ describe('FastMutex', () => {
 
       // in a few milliseconds, release the lock
       setTimeout(() => {
-        fm1.release('clientId').then(() => fm1LockReleased = true)
+        fm1.release('clientId').then(() => fm1LockReleased = true);
       }, lockHoldTime);
 
       return lock2Promise;
@@ -180,7 +179,7 @@ describe('FastMutex', () => {
 
     const p = fm1.lock('timeoutTest').then(() => {
       // fm2 will never get a lock as we're not releasing fm1's lock:
-      return fm2.lock('timeoutTest')
+      return fm2.lock('timeoutTest');
     });
 
     return expect(p).to.eventually.be.rejected;
