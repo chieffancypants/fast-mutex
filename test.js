@@ -8,8 +8,6 @@ var expect = chai.expect;
 var LocalStorage = require('node-localstorage').LocalStorage;
 var localStorage = new LocalStorage('./tmp');
 
-// TODO: Fulfilled promise value should have more properties
-
 describe('FastMutex', () => {
   let sandbox;
   beforeEach(() => {
@@ -25,7 +23,6 @@ describe('FastMutex', () => {
 
   it('should immediately establish a lock when there is no contention', () => {
     var fm1 = new FastMutex({ localStorage: localStorage });
-    // var fm2 = new FastMutex({ localStorage: localStorage });
 
     return fm1.lock('clientId').then((stats) => {
       expect(stats.restartCount).to.be.equal(0);
@@ -39,17 +36,17 @@ describe('FastMutex', () => {
     let spy = sandbox.spy(fm1, 'lock');
 
     const key = 'clientId';
-    localStorage.setItem(`yPrefix_${key}`, 'someOtherMutexId');
+    fm1.setItem(`yPrefix_${key}`, 'someOtherMutexId');
 
     setTimeout(() => {
       localStorage.removeItem(`yPrefix_${key}`);
-    }, 10);
+    }, 20);
 
     return fm1.lock(key).then((stats) => {
       expect(stats.restartCount).to.be.equal(spy.callCount - 1);
       expect(stats.locksLost).to.be.equal(0);
       expect(stats.contentionCount).to.be.equal(0);
-      expect(stats.timeToAcquire).to.be.above(10);
+      expect(stats.timeToAcquire).to.be.at.least(20);
       expect(spy.callCount).to.be.at.least(3);
     });
   });
@@ -57,7 +54,7 @@ describe('FastMutex', () => {
   it('when contending for a lock and ultimately losing, it should restart', () => {
     const key = 'clientId';
     const fm = new FastMutex({ localStorage: localStorage, id: 'uniqueId' });
-    const stub = sandbox.stub(localStorage, 'getItem')
+    const stub = sandbox.stub(fm, 'getItem')
 
     // Set up scenario for lock contention where we lost Y
     stub.onCall(0).returns(null)  // getItem Y
@@ -82,7 +79,7 @@ describe('FastMutex', () => {
   it('When contending for a lock and ultimately winning, it should not restart', () => {
     const key = 'clientId';
     const fm = new FastMutex({ localStorage: localStorage, id: 'uniqueId' });
-    const stub = sandbox.stub(localStorage, 'getItem')
+    const stub = sandbox.stub(fm, 'getItem')
 
     // Set up scenario for lock contention where we lost Y
     stub.onCall(0).returns(null)  // getItem Y
@@ -139,10 +136,10 @@ describe('FastMutex', () => {
     const key = 'clientId';
     const fm1 = new FastMutex({ localStorage: localStorage, id: 'releaseTestId', yPrefix: 'yLock' });
     return fm1.lock(key).then(() => {
-      expect(localStorage.getItem('yLock' + key)).to.be.equal('releaseTestId');
+      expect(fm1.getItem('yLock' + key)).to.be.equal('releaseTestId');
       return fm1.release(key);
     }).then(() => {
-      expect(localStorage.getItem('yLock' + key)).to.be.null;
+      expect(fm1.getItem('yLock' + key)).to.be.null;
     })
   });
 
@@ -189,24 +186,15 @@ describe('FastMutex', () => {
     return expect(p).to.eventually.be.rejected;
   });
 
-  it.only('should release the lock automatically after set time period', (done) => {
-    const fm1 = new FastMutex({ localStorage: localStorage, timeout: 50, yPrefix: 'yLock', id: 'timeoutClient' });
-    const fm2 = new FastMutex({ localStorage: localStorage, timeout: 50, yPrefix: 'yLock', id: 'timeoutClient2' });
+  it('should ignore expired locks', () => {
+    const fm1 = new FastMutex({ localStorage: localStorage, timeout: 5000, yPrefix: 'yLock', id: 'timeoutClient' });
+    const expiredRecord = {
+      expiresAt: new Date().getTime() - 5000,
+      value: 'oldclient'
+    };
 
-    fm1.lock('timeoutTest').then(() => {
-      expect(localStorage.getItem('yLocktimeoutTest')).to.be.equal('timeoutClient');
-    });
-
-    setTimeout(() => {
-      fm2.lock('timeoutTest').then(() => {
-        expect(localStorage.getItem('yLocktimeoutTest')).to.be.equal('timeoutClient2');
-        done();
-      })
-    }, 75);
-    // const fm2 = new FastMutex({ localStorage: localStorage, timeout: 50 });
-  });
-
-  it.skip('should not allow a client to lock the same object twice', () => {
-
+    localStorage.setItem('yLocktimeoutTest', JSON.stringify(expiredRecord));
+    expect(JSON.parse(localStorage.getItem('yLocktimeoutTest')).value).to.be.equal('oldclient');
+    return expect(fm1.lock('timeoutTest')).to.eventually.be.fulfilled;
   });
 });

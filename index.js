@@ -49,13 +49,13 @@ class FastMutex {
       const elapsedTime = new Date().getTime() - this.lockStats.startTime;
       if (elapsedTime >= this.timeout) {
         debug('Lock on "%s" could not be acquired by FastMutex client "%s"', key, this.id);
-        return reject(`Lock could not be acquired within ${this.timeout}ms`);
+        return reject(new Error(`Lock could not be acquired within ${this.timeout}ms`));
       }
 
-      this.localStorage.setItem(x, this.id);
+      this.setItem(x, this.id);
 
       // if y exists, another client is getting a lock, so retry in a bit
-      let lsY = this.localStorage.getItem(y);
+      let lsY = this.getItem(y);
       if (lsY) {
         debug('Lock exists on Y (%s), restarting...', lsY);
         this.lockStats.restartCount++;
@@ -64,17 +64,17 @@ class FastMutex {
       }
 
       // ask for inner lock
-      this.localStorage.setItem(y, this.id);
+      this.setItem(y, this.id);
 
       // if x was changed, another client is contending for an inner lock
-      let lsX = this.localStorage.getItem(x);
+      let lsX = this.getItem(x);
       if (lsX !== this.id) {
         this.lockStats.contentionCount++;
         debug('Lock contention detected. X="%s"', lsX);
 
         // Give enough time for critical section:
         setTimeout(() => {
-          lsY = this.localStorage.getItem(y);
+          lsY = this.getItem(y);
           if (lsY !== this.id) {
             // we lost the lock, restart the process again
             this.lockStats.restartCount++;
@@ -121,7 +121,17 @@ class FastMutex {
    * Helper function to parse JSON encoded values set in localStorage
    */
   getItem (key) {
-    return JSON.parse(this.localStorage.getItem(key));
+    const item = this.localStorage.getItem(key);
+    if (!item) return null;
+
+    const parsed = JSON.parse(item);
+    if (new Date().getTime() - parsed.expiresAt >= this.timeout) {
+      debug('FastMutex client "%s" removed an expired record on "%s"', this.id, key);
+      this.localStorage.removeItem(key);
+      return null;
+    }
+
+    return JSON.parse(item).value
   }
 
 }
