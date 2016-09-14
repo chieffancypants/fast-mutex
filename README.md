@@ -1,6 +1,19 @@
 # FastMutex
 Implementation of FastMutex for mutual exclusion locks using LocalStorage.  Uses promises to make it more readable, especially when used with async/await.
 
+### Installation
+
+NPM:
+```
+$ npm install fast-mutex --save
+```
+
+Bower:
+```
+$ bower install fast-mutex --save
+```
+
+
 ### Why is this necessary?
 Mutual Exclusion locks are generally not necessary in javascript applications as they are single threaded. There are, however, exceptions. WebWorkers, multiple tabs (and perhaps iframes in the future) give us the ability to run multiple concurrent javascript processes, and therefore, may require the locking of resources to prevent race conditions.
 
