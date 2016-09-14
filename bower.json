@@ -1,0 +1,27 @@
+{
+  "name": "fast-mutex",
+  "description": "Implementation of FastMutex for mutual exclusion locks using LocalStorage",
+  "main": "index.js",
+  "authors": [
+    "chieffancypants"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "mutex",
+    "fastmutex",
+    "lock",
+    "localstorage",
+    "browser"
+  ],
+  "homepage": "https://github.com/chieffancypants/fast-mutex",
+  "dependencies": {
+    "visionmedia-debug": "~2.2.0"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
