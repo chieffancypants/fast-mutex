@@ -1,7 +1,7 @@
 {
   "name": "fast-mutex",
   "description": "Implementation of FastMutex for mutual exclusion locks using LocalStorage",
-  "main": "index.js",
+  "main": "dist/fast-mutex.js",
   "authors": [
     "chieffancypants"
   ],
