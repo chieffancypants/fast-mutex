@@ -115,7 +115,7 @@ constructor ({
  Set the prefix for the localStorage key when acquiring the inner lock (Y)
 
 - `timeout`: 5000ms  
- Set the maximum time a lock can be held. This is necessary if the process exits prematurely while it held a lock (it was killed, crashed, the tab was closed, etc).
+ Set the maximum time a lock can be held. This is necessary if the process exits prematurely while it held a lock (it was killed, crashed, the tab was closed, etc). Make sure whatever work you're doing takes less time than this
 
 - `localStorage`: window.localStorage  
  Useful for testing in node (where there is no localStorage), and could also be used to replace the default localStorage with a library as long as the interface is the same.

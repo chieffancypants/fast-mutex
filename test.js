@@ -21,7 +21,7 @@ describe('FastMutex', () => {
   });
 
   it('should immediately establish a lock when there is no contention', () => {
-    var fm1 = new FastMutex({ localStorage: localStorage });
+    const fm1 = new FastMutex({ localStorage: localStorage });
 
     return fm1.lock('clientId').then((stats) => {
       expect(stats.restartCount).to.be.equal(0);
@@ -31,8 +31,7 @@ describe('FastMutex', () => {
   });
 
   it('When another client has a lock (Y is not 0), it should restart to acquire a lock at a later time', function () {
-    var fm1 = new FastMutex({ xPrefix: 'xPrefix_', yPrefix: 'yPrefix_', localStorage: localStorage });
-    let spy = sandbox.spy(fm1, 'lock');
+    const fm1 = new FastMutex({ xPrefix: 'xPrefix_', yPrefix: 'yPrefix_', localStorage: localStorage });
 
     const key = 'clientId';
     fm1.setItem(`yPrefix_${key}`, 'someOtherMutexId');
@@ -42,11 +41,10 @@ describe('FastMutex', () => {
     }, 20);
 
     return fm1.lock(key).then((stats) => {
-      expect(stats.restartCount).to.be.equal(spy.callCount - 1);
+      expect(stats.restartCount).to.be.at.least(1);
       expect(stats.locksLost).to.be.equal(0);
       expect(stats.contentionCount).to.be.equal(0);
       expect(stats.acquireDuration).to.be.at.least(20);
-      expect(spy.callCount).to.be.at.least(3);
     });
   });
 
@@ -64,14 +62,11 @@ describe('FastMutex', () => {
     stub.onCall(3).returns(null);
     stub.onCall(4).returns('uniqueId');
 
-    const spy = sandbox.spy(fm, 'lock');
-
     return fm.lock(key).then((stats) => {
       expect(stats.restartCount).to.be.equal(1);
       expect(stats.locksLost).to.be.equal(1);
       expect(stats.contentionCount).to.be.equal(1);
       expect(stats.acquireDuration).to.be.above(50);
-      expect(spy.callCount).to.be.equal(2);
     });
   });
 
@@ -195,5 +190,32 @@ describe('FastMutex', () => {
     localStorage.setItem('yLocktimeoutTest', JSON.stringify(expiredRecord));
     expect(JSON.parse(localStorage.getItem('yLocktimeoutTest')).value).to.be.equal('oldclient');
     return expect(fm1.lock('timeoutTest')).to.eventually.be.fulfilled;
+  });
+
+  it('should reset the client stats after lock is released', (done) => {
+    // without resetting the stats, the acquireStart will always be set, and
+    // after `timeout` ms, will be unable to acquire a lock anymore
+    const fm1 = new FastMutex({ localStorage: localStorage, timeout: 25 });
+    fm1.lock('resetStats')
+      .then(() => fm1.release('resetStats'))
+      .then(() => expect(fm1.lockStats.acquireStart).to.be.null);
+
+    setTimeout(() => {
+      const p = fm1.lock('resetStats').then(() => fm1.release('resetStats'));
+      expect(p).to.eventually.be.fulfilled.and.notify(done);
+    }, 50);
+  });
+
+  it('should reset the client stats if the lock has expired', (done) => {
+    // in the event a lock cannot be acquired within `timeout`, acquireStart
+    // will never be reset, and a subsequent call (after the `timeout`) would
+    // immediately fail
+    const fm1 = new FastMutex({ localStorage: localStorage, timeout: 25 });
+    fm1.lock('resetStats').then(() => {
+      // try to acquire a lock after `timeout`:
+      setTimeout(() => {
+        expect(fm1.lock('resetStats')).to.eventually.be.fulfilled.and.notify(done);
+      }, 50);
+    });
   });
 });
