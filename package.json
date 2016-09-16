@@ -1,6 +1,6 @@
 {
   "name": "fast-mutex",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Implementation of FastMutex for mutual exclusion locks using LocalStorage",
   "main": "index.js",
   "scripts": {
