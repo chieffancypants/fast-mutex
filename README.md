@@ -91,7 +91,7 @@ mutex.lock('sessionId').then((stats) => {
 ```
 
 ### new FastMutex([opts])
-Most options here won't be useful for most people, and are mostly useful for unit tests.  With ES6 destructuring, the options are pretty easy to see in the source, but here's a bit more detail about them:
+Most options here won't be useful for most people, and are mostly useful for unit tests.  With ES6 default parameters, the options are pretty easy to see in the source, but here's a bit more detail about them:
 
 ```js
 constructor ({
