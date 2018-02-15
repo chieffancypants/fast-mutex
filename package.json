@@ -2,6 +2,7 @@
   "name": "fast-mutex",
   "version": "1.0.2",
   "description": "Implementation of FastMutex for mutual exclusion locks using LocalStorage",
+  "repository": "https://github.com/chieffancypants/fast-mutex",
   "main": "index.js",
   "scripts": {
     "test": "mocha test",
